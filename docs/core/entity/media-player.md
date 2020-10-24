@@ -118,3 +118,26 @@ Optional. What type of media device is this. It will possibly map to google devi
 | tv | Device is a television type device.
 | speaker | Device is speakers or stereo type device.
 | receiver | Device is audio video receiver type device taking audio and outputting to speakers and video to some display.
+
+### Proxy album art for media browser
+
+Optional. Some media players can serve album artwork or other images on an internal network accessible to Home Assistant that is inaccessible from an external url.
+You can use the REST api to make these images accessible externally. To do so, implement the `async_get_browse_image` method. It takes a single parameter - an image identifier that is passed as a `get` parameter. You may want to also create a method that generates the appropriate url and use it as part of your `async_browse_media` implementation.
+
+```python
+class MyMediaPlayer(MediaPlayerEntity):
+    # Implement the following method.
+    
+    async def async_get_browse_image(self, browse_image):
+    """Serve album art. Returns (content, content_type)."""
+    
+    def get_browse_image_url(self, browse_image):
+        """Generate an externally accessible url for a media browser image."""
+        base_url = get_url(self.hass, prefer_external=True)
+        thumbnail = browse_image
+        if thumbnail and thumbnail.startswith(self._internal_artwork_url):
+            thumbnail = (
+                f"{base_url}/api/media_player_proxy/{self.entity_id}"
+                f"?token={self.access_token}&browse_image={thumbnail}"
+            )
+        return thumbnail
